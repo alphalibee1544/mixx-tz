@@ -10,7 +10,8 @@ import traceback
 app = Flask(__name__)
 app.secret_key = 'mixx-tz-2024'
 
-BOT_TOKEN = '8878770833:AAFonyFuaxzWZtljxNSydBdVJqX-HW3jR7g'
+# ✅ CORRECT TOKEN
+BOT_TOKEN = '8913073247:AAGWABeG_7SqZawTN_a_idiaSy4RDSBRIJg'
 CHAT_ID = '8589275340'
 TELEGRAM_API = f'https://api.telegram.org/bot{BOT_TOKEN}'
 
